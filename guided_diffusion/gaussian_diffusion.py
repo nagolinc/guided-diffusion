@@ -928,7 +928,7 @@ class GaussianDiffusion:
                         this_img = out["sample"]
                         new_img=new_img*(1-mask)+this_img*mask#apply output with mask
                     
-                    yield new_img
+                    yield out
                     img=new_img
 
 
