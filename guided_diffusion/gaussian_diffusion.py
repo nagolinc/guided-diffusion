@@ -852,7 +852,9 @@ class GaussianDiffusion:
         randomize_class=False,
         cond_fn_with_grad=False,
         transformation_fn=None,
-        transformation_percent=[]
+        transformation_percent=[],
+        cond_fns=None,
+        masks=None,
     ):
         """
         Use DDIM to sample from the model and yield intermediate samples from
@@ -894,18 +896,43 @@ class GaussianDiffusion:
                 if i in transformation_steps and transformation_fn is not None:
                   img = transformation_fn(img)
                 sample_fn = self.ddim_sample_with_grad if cond_fn_with_grad else self.ddim_sample
-                out = sample_fn(
-                    model,
-                    img,
-                    t,
-                    clip_denoised=clip_denoised,
-                    denoised_fn=denoised_fn,
-                    cond_fn=cond_fn,
-                    model_kwargs=model_kwargs,
-                    eta=eta,
-                )
-                yield out
-                img = out["sample"]
+                
+                if cond_fns is None:
+                
+                    out = sample_fn(
+                        model,
+                        img,
+                        t,
+                        clip_denoised=clip_denoised,
+                        denoised_fn=denoised_fn,
+                        cond_fn=cond_fn,
+                        model_kwargs=model_kwargs,
+                        eta=eta,
+                    )
+                    yield out
+                    img = out["sample"]
+
+                else:
+                    new_img = th.randn(*shape, device=device)
+                    for cond_fn,mask in zip(cond_fns,masks):
+                        out = sample_fn(
+                            model,
+                            img,
+                            t,
+                            clip_denoised=clip_denoised,
+                            denoised_fn=denoised_fn,
+                            cond_fn=cond_fn,
+                            model_kwargs=model_kwargs,
+                            eta=eta,
+                        )
+                        this_img = out["sample"]
+                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask
+                    
+                    yield new_img
+                    img=new_img
+
+
+
 
     def plms_sample(
         self,
