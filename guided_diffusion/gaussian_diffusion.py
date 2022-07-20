@@ -1117,23 +1117,6 @@ class GaussianDiffusion:
                                                size=model_kwargs['y'].shape,
                                                device=model_kwargs['y'].device)
             with th.no_grad():
-                out = self.plms_sample(
-                    model,
-                    img,
-                    t,
-                    clip_denoised=clip_denoised,
-                    denoised_fn=denoised_fn,
-                    cond_fn=cond_fn,
-                    model_kwargs=model_kwargs,
-                    cond_fn_with_grad=cond_fn_with_grad,
-                    order=order,
-                    old_out=old_out,
-                )
-                yield out
-                old_out = out
-                img = out["sample"]
-
-
                 if cond_fns is None:
                 
                     out = self.plms_sample(
@@ -1151,11 +1134,9 @@ class GaussianDiffusion:
                     yield out
                     old_out = out
                     img = out["sample"]
-
                 else:
                     new_img = th.randn(*shape, device=device)
                     for cond_fn,mask in zip(cond_fns,masks):
-
                         out = self.plms_sample(
                             model,
                             img,
@@ -1168,10 +1149,8 @@ class GaussianDiffusion:
                             order=order,
                             old_out=old_out,
                         )
-
                         this_img = out["sample"]
-                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask
-                    
+                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask                    
                     yield out
                     old_out = out
                     img = new_img
