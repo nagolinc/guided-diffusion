@@ -1075,7 +1075,9 @@ class GaussianDiffusion:
         init_image=None,
         randomize_class=False,
         cond_fn_with_grad=False,
-        order=2,
+        order=2,        
+        cond_fns=None,
+        masks=None,
     ):
         """
         Use PLMS to sample from the model and yield intermediate samples from each
@@ -1130,6 +1132,49 @@ class GaussianDiffusion:
                 yield out
                 old_out = out
                 img = out["sample"]
+
+
+                if cond_fns is None:
+                
+                    out = self.plms_sample(
+                        model,
+                        img,
+                        t,
+                        clip_denoised=clip_denoised,
+                        denoised_fn=denoised_fn,
+                        cond_fn=cond_fn,
+                        model_kwargs=model_kwargs,
+                        cond_fn_with_grad=cond_fn_with_grad,
+                        order=order,
+                        old_out=old_out,
+                    )
+                    yield out
+                    old_out = out
+                    img = out["sample"]
+
+                else:
+                    new_img = th.randn(*shape, device=device)
+                    for cond_fn,mask in zip(cond_fns,masks):
+
+                        out = self.plms_sample(
+                            model,
+                            img,
+                            t,
+                            clip_denoised=clip_denoised,
+                            denoised_fn=denoised_fn,
+                            cond_fn=cond_fn,
+                            model_kwargs=model_kwargs,
+                            cond_fn_with_grad=cond_fn_with_grad,
+                            order=order,
+                            old_out=old_out,
+                        )
+
+                        this_img = out["sample"]
+                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask
+                    
+                    yield out
+                    old_out = out
+                    img = new_img
 
     def _vb_terms_bpd(
         self, model, x_start, x_t, t, clip_denoised=True, model_kwargs=None
