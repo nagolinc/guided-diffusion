@@ -926,7 +926,8 @@ class GaussianDiffusion:
                             eta=eta,
                         )
                         this_img = out["sample"]
-                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask
+                        #new_img=new_img*(1-mask)+this_img*mask#apply output with mask
+                        new_img=new_img+this_img*mask#apply output with mask
                     
                     yield out
                     img=new_img
@@ -1150,7 +1151,8 @@ class GaussianDiffusion:
                             old_out=old_out,
                         )
                         this_img = out["sample"]
-                        new_img=new_img*(1-mask)+this_img*mask#apply output with mask                    
+                        #new_img=new_img*(1-mask)+this_img*mask#apply output with mask                    
+                        new_img=new_img+this_img*mask#apply output with mask                    
                     yield out
                     old_out = out
                     img = new_img
