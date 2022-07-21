@@ -913,7 +913,7 @@ class GaussianDiffusion:
                     img = out["sample"]
 
                 else:
-                    new_img = th.randn(*shape, device=device)
+                    new_img = th.zeros(*shape, device=device)
                     for cond_fn,mask in zip(cond_fns,masks):
                         out = sample_fn(
                             model,
@@ -1135,7 +1135,7 @@ class GaussianDiffusion:
                     old_out = out
                     img = out["sample"]
                 else:
-                    new_img = th.randn(*shape, device=device)
+                    new_img = th.zeros(*shape, device=device)
                     for cond_fn,mask in zip(cond_fns,masks):
                         out = self.plms_sample(
                             model,
