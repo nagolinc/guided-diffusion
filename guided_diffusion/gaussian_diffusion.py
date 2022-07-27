@@ -1141,8 +1141,9 @@ class GaussianDiffusion:
                     for cond_fn,mask in zip(cond_fns,masks):
 
                         if obsure_masked_regions:
-                            noise = th.randn(*shape, device=device)
-                            this_img=img+noise*(mask==0)
+                            #noise = th.randn(*shape, device=device)
+                            noise = th.ones(*shape, device=device)
+                            this_img=img*(mask>0)+noise*(mask==0)
                         else:
                             this_img=img
 
