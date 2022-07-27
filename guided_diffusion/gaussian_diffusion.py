@@ -1111,6 +1111,7 @@ class GaussianDiffusion:
             indices = tqdm(indices)
 
         old_out = None
+        old_outs=[None for mask in masks]
 
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
@@ -1119,8 +1120,7 @@ class GaussianDiffusion:
                                                size=model_kwargs['y'].shape,
                                                device=model_kwargs['y'].device)
             with th.no_grad():
-                if cond_fns is None:
-                
+                if cond_fns is None:                
                     out = self.plms_sample(
                         model,
                         img,
@@ -1138,16 +1138,19 @@ class GaussianDiffusion:
                     img = out["sample"]
                 else:
                     new_img = th.zeros(*shape, device=device)
+                    pred_xstart = th.zeros(*shape, device=device)
+                    which_color=0
                     for cond_fn,mask in zip(cond_fns,masks):
-
-                        if obsure_masked_regions:
-                            #noise = th.randn(*shape, device=device)
-                            #noise = th.ones(*shape, device=device)
-                            #this_img=img*(mask>0)+noise*(mask==0)
-                            this_img=img*(mask>0)
+                        #don't know why _scale_timesteps isn't working the way I expect
+                        cur_t=int(float(self.num_timesteps-i-1)*1000/self.num_timesteps)
+                        if obsure_masked_regions is not None and obsure_masked_regions[cur_t]>0:
+                            noise = th.randn(*shape, device=device)
+                            #obscure_masked_regions is a len()=1000 list that tells how much noise to 
+                            # mask with at each step
+                            # in current tests [0.2]*200+[0.0]*800 seems reasonable
+                            this_img=img+noise*obsure_masked_regions[cur_t]*(mask==0)
                         else:
                             this_img=img
-
                         out = self.plms_sample(
                             model,
                             this_img,
@@ -1158,12 +1161,14 @@ class GaussianDiffusion:
                             model_kwargs=model_kwargs,
                             cond_fn_with_grad=cond_fn_with_grad,
                             order=order,
-                            old_out=old_out,
+                            old_out=old_out
                         )
                         this_img = out["sample"]
-                        #new_img=new_img*(1-mask)+this_img*mask#apply output with mask                    
-                        new_img=new_img+this_img*mask#apply output with mask                    
-                    yield out
+                        new_img=new_img+this_img*mask#apply output with mask
+                        pred_xstart=pred_xstart+out["pred_xstart"]*mask#apply output with mask
+                        old_outs[which_color]=out
+                        which_color+=1
+                    yield {"pred_xstart":pred_xstart}
                     old_out = out
                     img = new_img
 
