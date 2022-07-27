@@ -1144,7 +1144,7 @@ class GaussianDiffusion:
                             #noise = th.randn(*shape, device=device)
                             #noise = th.ones(*shape, device=device)
                             #this_img=img*(mask>0)+noise*(mask==0)
-                            this_img=img*mask
+                            this_img=img*(mask>0)
                         else:
                             this_img=img
 
