@@ -1079,6 +1079,7 @@ class GaussianDiffusion:
         order=2,        
         cond_fns=None,
         masks=None,
+        obsure_masked_regions=False,
     ):
         """
         Use PLMS to sample from the model and yield intermediate samples from each
@@ -1138,9 +1139,16 @@ class GaussianDiffusion:
                 else:
                     new_img = th.zeros(*shape, device=device)
                     for cond_fn,mask in zip(cond_fns,masks):
+
+                        if obsure_masked_regions:
+                            noise = th.randn(*shape, device=device)
+                            this_img=img+noise*(mask==0)
+                        else:
+                            this_img=img
+
                         out = self.plms_sample(
                             model,
-                            img,
+                            this_img,
                             t,
                             clip_denoised=clip_denoised,
                             denoised_fn=denoised_fn,
